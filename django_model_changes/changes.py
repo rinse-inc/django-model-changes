@@ -1,5 +1,3 @@
-import datetime
-
 from django.db.models import signals
 
 from .signals import post_change
@@ -104,7 +102,8 @@ class ChangesMixin(object):
         field_names = set()
         [field_names.add(f.name) for f in self._meta.local_fields]
         [field_names.add(f.attname) for f in self._meta.local_fields]
-        return dict([(field_name, getattr(self, field_name, None)) for field_name in field_names])
+
+        return dict([(field_name, getattr(self, field_name)) for field_name in field_names])
 
     def previous_state(self):
         """
@@ -125,21 +124,22 @@ class ChangesMixin(object):
         return self._states[0]
 
     def _changes(self, other, current):
-        changes = []
-        for key, was in other.items():
-            if getattr(current[key], 'tzinfo', None) or getattr(was, 'tzinfo', None):
-                if (not current[key] and was) or (current[key] and not was):
-                    changes.append((key, (was, current[key])))
-                elif ((getattr(current[key], 'tzinfo', None) and not getattr(was, 'tzinfo', None))
-                      or (getattr(was, 'tzinfo', None) and not getattr(current[key], 'tzinfo', None))):
-                    changes.append((key, (was, current[key])))
-                elif was != current[key]:
-                    changes.append((key, (was, current[key])))
-            else:
-                if was != current[key]:
-                    changes.append((key, (was, current[key])))
-
-        return dict(changes)
+        # changes = []
+        # for key, was in other.items():
+        #     if getattr(current[key], 'tzinfo', None) or getattr(was, 'tzinfo', None):
+        #         if (not current[key] and was) or (current[key] and not was):
+        #             changes.append((key, (was, current[key])))
+        #         elif ((getattr(current[key], 'tzinfo', None) and not getattr(was, 'tzinfo', None))
+        #               or (getattr(was, 'tzinfo', None) and not getattr(current[key], 'tzinfo', None))):
+        #             changes.append((key, (was, current[key])))
+        #         elif was != current[key]:
+        #             changes.append((key, (was, current[key])))
+        #     else:
+        #         if was != current[key]:
+        #             changes.append((key, (was, current[key])))
+        #
+        # return dict(changes)
+        return dict([(key, (was, current[key])) for key, was in other.iteritems() if was != current[key]])
 
     def changes(self):
         """
