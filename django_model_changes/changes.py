@@ -127,10 +127,11 @@ class ChangesMixin(object):
     def _changes(self, other, current):
         changes = []
         for key, was in other.items():
-            if isinstance(current[key], datetime.datetime) or isinstance(was, datetime.datetime):
+            if getattr(current[key], 'tzinfo', None) or getattr(was, 'tzinfo', None):
                 if (not current[key] and was) or (current[key] and not was):
                     changes.append((key, (was, current[key])))
-                elif (current[key].tzinfo and not was.tzinfo) or (was.tzinfo and not current[key].tzinfo):
+                elif ((getattr(current[key], 'tzinfo', None) and not getattr(was, 'tzinfo', None))
+                      or (getattr(was, 'tzinfo', None) and not getattr(current[key], 'tzinfo', None))):
                     changes.append((key, (was, current[key])))
                 elif was != current[key]:
                     changes.append((key, (was, current[key])))
