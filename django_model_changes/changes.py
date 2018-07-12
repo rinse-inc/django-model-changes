@@ -1,3 +1,5 @@
+import datetime
+
 from django.db.models import signals
 
 from .signals import post_change
@@ -123,7 +125,20 @@ class ChangesMixin(object):
         return self._states[0]
 
     def _changes(self, other, current):
-        return dict([(key, (was, current[key])) for key, was in other.iteritems() if was != current[key]])
+        changes = []
+        for key, was in other.items():
+            if isinstance(current[key], datetime.datetime) or isinstance(was, datetime.datetime):
+                if (not current[key] and was) or (current[key] and not was):
+                    changes.append((key, (was, current[key])))
+                elif (current[key].tzinfo and not was.tzinfo) or (was.tzinfo and not current[key].tzinfo):
+                    changes.append((key, (was, current[key])))
+                elif was != current[key]:
+                    changes.append((key, (was, current[key])))
+            else:
+                if was != current[key]:
+                    changes.append((key, (was, current[key])))
+
+        return dict(changes)
 
     def changes(self):
         """
