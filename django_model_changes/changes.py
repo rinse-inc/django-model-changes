@@ -117,7 +117,7 @@ class ChangesMixin(object):
 
             # Foreign fields require special care because we don't want to trigger a database query when the field is
             # not yet cached.
-            if field.rel:
+            if field.remote_field:
                 descriptor = self.__class__.__dict__[field.name]
                 if hasattr(self, descriptor.cache_name):
                     fields[field.name] = getattr(self, descriptor.cache_name)
