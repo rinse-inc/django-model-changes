@@ -110,12 +110,21 @@ class ChangesMixin(object):
         """
         Returns a ``field -> value`` dict of the current state of the instance.
         """
-        field_names = set()
-        [field_names.add(f.name) for f in self._meta.local_fields]
+        fields = {}
+        local_data = self.__dict__
+        for field in self._meta.local_fields:
+            fields[field.attname] = local_data.get(field.attname)
+            fields[field.name] = local_data.get(field.name)
 
-        [field_names.add(f.attname) for f in self._meta.local_fields]
-        return dict([(field_name, getattr(self, field_name, None)) \
-                     for field_name in field_names])
+            # Foreign fields require special care because we don't want to trigger a database query when the field is
+            # not yet cached.
+            if field.remote_field:
+                if hasattr(self.__class__.__dict__, field.name):
+                    descriptor = self.__class__.__dict__[field.name]
+                    if hasattr(self, descriptor.cache_name):
+                        fields[field.name] = getattr(self, descriptor.cache_name)
+
+        return fields
 
     def previous_state(self):
         """

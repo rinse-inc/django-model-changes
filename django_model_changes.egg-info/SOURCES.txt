@@ -2,8 +2,11 @@ LICENSE
 MANIFEST.in
 README.rst
 django_model_changes/__init__.py
+django_model_changes/__init__.pyc
 django_model_changes/changes.py
+django_model_changes/changes.pyc
 django_model_changes/signals.py
+django_model_changes/signals.pyc
 django_model_changes.egg-info/PKG-INFO
 django_model_changes.egg-info/SOURCES.txt
 django_model_changes.egg-info/dependency_links.txt
