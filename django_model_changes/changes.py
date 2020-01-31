@@ -69,15 +69,6 @@ class ChangesMixin(object):
         self._states = []
         self._save_state(new_instance=True)
 
-        signals.post_save.connect(
-            _post_save, sender=self.__class__,
-            dispatch_uid='django-changes-%s' % self.__class__.__name__
-        )
-        signals.post_delete.connect(
-            _post_delete, sender=self.__class__,
-            dispatch_uid='django-changes-%s' % self.__class__.__name__
-        )
-
     def _save_state(self, new_instance=False, event_type='save'):
         # Pipe the pk on deletes so that a correct snapshot of the current
         # state can be taken.
@@ -96,15 +87,6 @@ class ChangesMixin(object):
         # Send post_change signal unless this is a new instance
         if not new_instance:
             post_change.send(sender=self.__class__, instance=self)
-
-    def _instance_from_state(self, state):
-        """
-        Creates an instance from a previously saved state.
-        """
-        instance = self.__class__()
-        for key, value in state.items():
-            setattr(instance, key, value)
-        return instance
 
     def current_state(self):
         """
@@ -145,21 +127,21 @@ class ChangesMixin(object):
         return self._states[0]
 
     def _changes(self, other, current):
-        changes = []
+        changes = {}
         for key, was in other.items():
             if getattr(current[key], 'tzinfo', None) or getattr(was, 'tzinfo', None):
                 if (not current[key] and was) or (current[key] and not was):
-                    changes.append((key, (was, current[key])))
+                    changes[key] = (was, current[key])
                 elif ((getattr(current[key], 'tzinfo', None) and not getattr(was, 'tzinfo', None))
                       or (getattr(was, 'tzinfo', None) and not getattr(current[key], 'tzinfo', None))):
-                    changes.append((key, (was, current[key])))
+                    changes[key] = (was, current[key])
                 elif was != current[key]:
-                    changes.append((key, (was, current[key])))
+                    changes[key] = (was, current[key])
             else:
                 if was != current[key]:
-                    changes.append((key, (was, current[key])))
+                    changes[key] = (was, current[key])
 
-        return dict(changes)
+        return changes
 
     def changes(self):
         """
@@ -225,18 +207,18 @@ class ChangesMixin(object):
         """
         Returns an instance of this model in its old state.
         """
-        return self._instance_from_state(self.old_state())
+        return self.__class__(**self.old_state())
 
     def previous_instance(self):
         """
         Returns an instance of this model in its previous state.
         """
-        return self._instance_from_state(self.previous_state())
+        return self.__class__(**self.previous_state())
 
 
-def _post_save(sender, instance, **kwargs):
+def model_changes_post_save(sender, instance, **kwargs):
     instance._save_state(new_instance=False, event_type=SAVE)
 
 
-def _post_delete(sender, instance, **kwargs):
+def model_changes_post_delete(sender, instance, **kwargs):
     instance._save_state(new_instance=False, event_type=DELETE)
